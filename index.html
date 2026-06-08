@@ -265,7 +265,7 @@
       </p>
       <p>
         Following the derivation above, the guidance is directly
-        $\nabla_{a_t} Q(s, a_t)$ — the critic gradient at the current noisy action $a_t$.
+        $\nabla_{a_t} Q(s, a_t)$ — the critic gradient at the noisy action $a_t$.
         However, the critic $Q(s,a)$ is trained exclusively on <em>fully denoised</em>
         actions from the dataset. Intermediate noisy actions $a_t$ can lie far
         outside the critic's training distribution and <strong>querying it at out-of-distribution (OOD)
@@ -419,11 +419,20 @@
         We compare below three different gradient estimators:
       </p>
 
-      <div style="overflow-x: auto; margin-bottom: 1.25rem;">
-        <ul style="display: inline-block; text-align: left; list-style: none; padding-left: 0; margin: 0;">
-          <li>QGF: $\quad \nabla_{a_t} Q(s, a_1) \approx \hat{J}^\top \: \nabla_{\hat{a}_1} Q(s, \hat{a}_1)$</li>
-          <li>QGF-Jacobian: $\quad \nabla_{a_t} Q(s, a_1) \approx J^\top \: \nabla_{\hat{a}_1} Q(s, \hat{a}_1)$</li>
-          <li>QGF-chain: $\quad \nabla_{a_t} Q(s, a_1) \approx \hat{J}^\top \: \nabla_{a_t} Q(s, \mathrm{ODE}(a_t))$</li>
+      <div style="overflow-x: auto; margin-bottom: 1.25rem; text-align: center;">
+        <ul style="display: inline-grid; grid-template-columns: auto auto; column-gap: 1rem; row-gap: 0.35rem; list-style: none; padding: 0; margin: 0; text-align: left;">
+          <li style="display: contents;">
+            <span>QGF:</span>
+            <span>$\nabla_{a_t} Q(s, a_1) \approx \hat{J}^\top \: \nabla_{\hat{a}_1} Q(s, \hat{a}_1)$</span>
+          </li>
+          <li style="display: contents;">
+            <span>QGF-Jacobian:</span>
+            <span>$\nabla_{a_t} Q(s, a_1) \approx J^\top \: \nabla_{\hat{a}_1} Q(s, \hat{a}_1)$</span>
+          </li>
+          <li style="display: contents;">
+            <span>QGF-chain:</span>
+            <span>$\nabla_{a_t} Q(s, a_1) \approx \hat{J}^\top \: \nabla_{a_t} Q(s, \mathrm{ODE}(a_t))$</span>
+          </li>
         </ul>
       </div>
 
@@ -460,7 +469,8 @@
         <p class="fig-caption">
           <strong>$Q$-value optimization quality.</strong> $Q$ values of final denoised actions
           under each gradient guidance scheme. QGF's two approximations together make it the best
-          gradient-based optimizer, closely approaching the best-of-$N$ oracle.
+          gradient-based optimizer, closely approaching the best-of-$N$ oracle. The OOD gradient
+          exploits the critic and doesn't perform well (see paper for details).
         </p>
       </div>
     </div>
@@ -497,15 +507,17 @@
     <h3 class="title is-4" style="font-family:'Google Sans',sans-serif; margin-bottom:0.5rem;">
       Comparing QGF with Test-Time and Train-Time Baselines
     </h3>
-    <p style="margin-bottom:1rem;">
-      We group baselines into two categories: test-time methods that uses a learned critic to optimize 
-      action sampling from a BC policy entirely at test time, and training-time methods that 
-      trains a policy to maximize $Q(s, a)$ during training.
-      QGF <strong>outperforms all prior test-time RL methods</strong> by a significant margin and is <strong>competitive
-      with the best training-time baseline</strong>.
-      QGF also outperforms its variant QGF-Jacobian, showing that dropping the Jacobian 
-      in the gradient estimator improves performance.
-    </p>
+    <div class="content">
+      <p style="margin-bottom:1rem;">
+        We group baselines into two categories: test-time methods that uses a learned critic to optimize 
+        action sampling from a BC policy entirely at test time, and training-time methods that 
+        trains a policy to maximize $Q(s, a)$ during training.
+        QGF <strong>outperforms all prior test-time RL methods</strong> by a significant margin and is <strong>competitive
+        with the best training-time baseline</strong>.
+        QGF also outperforms its variant QGF-Jacobian, showing that dropping the Jacobian 
+        in the gradient estimator improves performance.
+      </p>
+    </div>
     <figure class="image" style="margin-bottom:0.75rem;">
       <img class="fig-img bordered" src="static/figures/results-1.png"
            alt="Offline RL results: QGF vs all baselines" />
@@ -518,10 +530,16 @@
     <h3 class="title is-4" style="font-family:'Google Sans',sans-serif; margin-bottom:0.5rem;">
       Scaling Test-Time Compute with Best-of-$N$
     </h3>
-    <p style="margin-bottom:1rem;">
-      QGF alone outperforms BFN ($N$=4) while using orders of magnitude fewer FLOPs; When combinining QGF with BFN sampling, QGF+BFN ($N=4$)
-      matches BFN ($N$=16) at much lower compute cost, showing gradient guidance is efficient and effective.
+    <div class="content">
+      <p style="margin-bottom:1rem;">
+      Best-of-$N$ (BFN) sampling is an effective way to improve policy performance when 
+      additional test-time compute is available. In fact, we find that <strong>BFN is orders of magnitude
+      more expensive</strong> in FLOPs than QGF and other test-time methods.
+      Still, QGF alone <strong>outperforms BFN ($N$=4)</strong>. 
+      A variant of our method, QGF+BFN, which combines QGF with BFN sampling, matches BFN ($N$=16) at much lower compute cost, 
+      showing gradient guidance is <strong>efficient and effective</strong>.
     </p>
+    </div>
     <div class="fig-two-col" style="margin-bottom:0.75rem;">
       <div>
         <img class="fig-img bordered" src="static/figures/bfn_results-1.png"
@@ -534,7 +552,7 @@
         <img class="fig-img bordered" src="static/figures/compute_cost-1.png"
              alt="Compute cost comparison" />
         <p class="fig-caption">
-          FLOPs per action for each test-time method.
+          GFLOPs per action for each test-time method.
         </p>
       </div>
     </div>
@@ -544,9 +562,11 @@
     <h3 class="title is-4" style="font-family:'Google Sans',sans-serif; margin-bottom:0.5rem;">
       Scaling QGF to Harder Tasks and Larger Models
     </h3>
-    <p style="margin-bottom:1rem;">
-      On offline goal-conditioned long-horizon tasks QGF is consistently the best-performing method as
-      difficulty increases, and scales with model size (~$4\times$ gain at 3.2M params) while
+    <div class="content">
+      <p style="margin-bottom:1rem;">
+      On offline goal-conditioned long-horizon tasks QGF is consistently the <strong>best-performing method as
+      difficulty increases</strong>, and QGF is consistently better than QGF-Jacobian.
+      and <strong>scales better with model size</strong> (~$4\times$ gain at 3.2M params) while
       training-time baselines plateau or collapse.
     </p>
     <div class="fig-asym-col" style="margin-bottom:0.75rem;">
@@ -572,8 +592,8 @@
       QGF with Different Critics
     </h3>
     <p style="margin-bottom:1rem;">
-      QGF is agnostic to the critic type: plugging in a higher-quality TD-based critic (QAM)
-      further boosts performance, and QGF+QAM critic outperforms QAM itself.
+      QGF is <strong>agnostic to the critic type</strong>: plugging in a higher-quality TD-based critic (QAM)
+      further boosts performance compared to IQL critics, and QGF+QAM critic outperforms QAM itself.
     </p>
     <div class="columns is-centered">
       <div class="column is-half">

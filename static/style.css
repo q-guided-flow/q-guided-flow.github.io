@@ -1,0 +1,228 @@
+/* ── Fonts ── */
+:root {
+  --paper-primary: #73A4C6; /* QGFBlue / ourblue in paper/ */
+  --paper-primary-dark: #5a91b4;
+}
+
+body {
+  font-family: 'Noto Sans', sans-serif;
+}
+
+/* ── Publication hero ── */
+.publication-title {
+  font-family: 'Google Sans', 'Noto Sans', sans-serif;
+  font-size: 2.3rem !important;
+  line-height: 1.25 !important;
+}
+
+.publication-authors {
+  font-family: 'Google Sans', 'Noto Sans', sans-serif;
+}
+
+.author-block {
+  margin-right: 4px;
+}
+
+.publication-links .link-block {
+  margin: 4px;
+}
+
+/* ── Teaser ── */
+.teaser .hero-body {
+  padding-top: 0;
+  padding-bottom: 3rem;
+}
+
+/* ── TL;DR ── */
+h2.title.tldr-heading,
+.section-heading.tldr-heading {
+  text-align: center;
+  color: var(--paper-primary) !important;
+}
+
+.tldr-box {
+  background: #eef4f9;
+  border-radius: 12px;
+  padding: 1.5rem 1.75rem;
+  font-size: 1.05rem;
+  line-height: 1.7;
+}
+
+.tldr-box .tldr-heading {
+  margin-bottom: 0.75rem;
+}
+
+.tldr-box p {
+  margin: 0;
+}
+
+.tldr-box strong {
+  color: var(--paper-primary-dark);
+}
+
+.content strong {
+  color: var(--paper-primary-dark);
+}
+
+/* ── Section headings ── */
+.section-heading {
+  font-family: 'Google Sans', 'Noto Sans', sans-serif;
+  font-size: 1.75rem;
+  font-weight: 700;
+  margin-bottom: 1.25rem;
+}
+
+/* ── Figure captions ── */
+.fig-caption {
+  font-size: 0.92rem;
+  color: #555;
+  line-height: 1.55;
+  margin-top: 0.75rem;
+  text-align: left;
+}
+.fig-caption strong {
+  color: #222;
+}
+
+/* ── Algorithm box ── */
+.algo-box {
+  background: #f8f9fa;
+  border: 1px solid #dbdbdb;
+  border-radius: 6px;
+  padding: 1.25rem 1.5rem;
+  font-family: 'Courier New', 'Lucida Console', monospace;
+  font-size: 0.9rem;
+  line-height: 1.75;
+}
+.algo-box .algo-title {
+  font-family: 'Google Sans', 'Noto Sans', sans-serif;
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: #363636;
+  margin-bottom: 0.6rem;
+  border-bottom: 1px solid #dbdbdb;
+  padding-bottom: 0.4rem;
+}
+.algo-box .comment {
+  color: var(--paper-primary);
+  font-weight: 600;
+}
+
+/* ── BibTeX ── */
+.bibtex-code {
+  background: #1e1e2e;
+  color: #cdd6f4;
+  border-radius: 6px;
+  padding: 1.25rem 1.5rem;
+  font-family: 'Courier New', monospace;
+  font-size: 0.88rem;
+  line-height: 1.65;
+  white-space: pre;
+  overflow-x: auto;
+}
+
+/* ── Key insight box ── */
+.insight-box {
+  background: #fff8e6;
+  border: 1px solid #f5c842;
+  border-radius: 6px;
+  padding: 1rem 1.25rem;
+  margin: 1rem 0;
+  font-size: 0.97rem;
+  line-height: 1.65;
+}
+
+/* ── Gradient method boxes (Problems / Method sections) ── */
+.method-box {
+  border-radius: 12px;
+  padding: 1.5rem 1.75rem;
+  font-size: 1rem;
+  line-height: 1.7;
+  margin: 1.75rem 0;
+  border: 1px solid transparent;
+}
+.method-box.negative-red    { background: #f7e9e9; border-color: #e8c4c4; }
+.method-box.negative-orange { background: #faeedf; border-color: #e8d0ad; }
+.method-box.positive-green  { background: #e6f5eb; border-color: #b8ddc4; }
+
+.method-box .box-title {
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+.method-box.negative-red    .box-title { color: #c0392b; }
+.method-box.negative-orange .box-title { color: #c0660a; }
+.method-box.positive-green  .box-title { color: #1e8449; }
+
+.method-box p { margin-bottom: 0.75rem; }
+.method-box p:last-child { margin-bottom: 0; }
+
+.method-box .insight-box {
+  background: rgba(255,255,255,0.6);
+  border-color: rgba(0,0,0,0.1);
+  margin-top: 0.75rem;
+  margin-bottom: 0;
+}
+
+/* ── Equation-like display ── */
+.eq-block {
+  background: #f8f9fa;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  padding: 0.75rem 1.25rem;
+  font-family: 'Courier New', monospace;
+  font-size: 0.95rem;
+  text-align: center;
+  margin: 1rem 0;
+}
+
+/* ── Two-column figure grid ── */
+.fig-two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  align-items: start;
+}
+.fig-three-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 1.5rem;
+  align-items: start;
+}
+
+@media (max-width: 768px) {
+  .fig-two-col, .fig-three-col { grid-template-columns: 1fr; }
+  .publication-title { font-size: 1.6rem !important; }
+}
+
+/* ── Separator ── */
+.section-sep {
+  border: none;
+  border-top: 1px solid #e0e0e0;
+  margin: 0;
+}
+
+/* ── Alternating section bg ── */
+.has-background-alt {
+  background-color: #fafafa;
+}
+
+/* ── Results grid ── */
+.results-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2.5rem;
+  align-items: start;
+}
+@media (max-width: 768px) {
+  .results-grid { grid-template-columns: 1fr; }
+}
+
+/* figure images */
+.fig-img {
+  width: 100%;
+  border-radius: 4px;
+  display: block;
+}
+.fig-img.bordered {
+  border: 1px solid #dbdbdb;
+}

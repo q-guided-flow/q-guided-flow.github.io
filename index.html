@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>QGF: Test-Time Gradient Guidance of Flow Policies in RL</title>
+  <meta name="description" content="Q-Guided Flow (QGF): a test-time RL algorithm that guides flow policy denoising with critic gradients." />
+
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;700&family=Noto+Sans:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet" />
+  <!-- Bulma -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css" />
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" />
+  <!-- KaTeX -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" />
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+    onload="renderMathInElement(document.body, {
+      delimiters: [
+        {left: '$$', right: '$$', display: true},
+        {left: '$', right: '$',  display: false}
+      ],
+      throwOnError: false
+    });"></script>
+  <!-- Custom -->
+  <link rel="stylesheet" href="static/style.css" />
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════
+     HERO
+═══════════════════════════════════════════════════ -->
+<section class="hero">
+  <div class="hero-body">
+    <div class="container is-max-desktop">
+      <div class="columns is-centered">
+        <div class="column has-text-centered">
+
+          <h1 class="title is-2 publication-title">
+            Test-Time Gradient Guidance of<br>Flow Policies in Reinforcement Learning
+          </h1>
+
+          <div class="is-size-5 publication-authors" style="margin-bottom:0.5rem;">
+            <span class="author-block">
+              <a href="https://zhouzypaul.github.io" target="_blank">Zhiyuan Zhou</a><sup>1</sup>,
+            </span>
+            <span class="author-block">
+              <a href="https://andypeng05.github.io/" target="_blank">Andy Peng</a><sup>1</sup>,
+            </span>
+            <span class="author-block">
+              <a href="https://charlesxu0124.github.io/" target="_blank">Charles Xu</a><sup>1</sup>,
+            </span>
+            <span class="author-block">
+              <a href="https://colinqiyangli.github.io" target="_blank">Qiyang Li</a><sup>1</sup>,
+            </span>
+            <span class="author-block">
+              <a href="https://aldeia.uk/" target="_blank">Tobias Springenberg</a><sup>2</sup>,
+            </span>
+            <span class="author-block">
+              <a href="https://kvfrans.com/" target="_blank">Kevin Frans</a><sup>1</sup>,
+            </span>
+            <span class="author-block">
+              <a href="https://people.eecs.berkeley.edu/~svlevine/" target="_blank">Sergey Levine</a><sup>1</sup>
+            </span>
+          </div>
+
+          <div class="is-size-6 publication-authors" style="margin-bottom:1.25rem; color:#555;">
+            <span class="author-block"><sup>1</sup>UC Berkeley</span>
+            &nbsp;&nbsp;
+            <span class="author-block"><sup>2</sup>Physical Intelligence</span>
+          </div>
+
+          <!-- Buttons -->
+          <div class="publication-links">
+            <span class="link-block">
+              <a href="#" class="external-link button is-normal is-rounded is-dark">
+                <span class="icon"><i class="fas fa-file-pdf"></i></span>
+                <span>Paper</span>
+              </a>
+            </span>
+            <span class="link-block">
+              <a href="https://github.com/zhouzypaul/qgf" class="external-link button is-normal is-rounded is-dark">
+                <span class="icon"><i class="fab fa-github"></i></span>
+                <span>Code</span>
+              </a>
+            </span>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Teaser -->
+<section class="hero teaser">
+  <div class="container is-max-desktop">
+    <div class="hero-body" style="padding-top:0; padding-bottom:2rem;">
+      <figure class="image">
+        <img class="fig-img" src="static/figures/teaser-1.png"
+             alt="QGF overview: guiding flow denoising steps with critic gradients" />
+      </figure>
+    </div>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════════════════════════
+     TL;DR
+═══════════════════════════════════════════════════ -->
+<section class="section">
+  <div class="container is-max-desktop">
+    <div class="tldr-box">
+      <h2 class="title is-3 section-heading tldr-heading has-text-centered">TL;DR</h2>
+      <p>
+        We propose <strong>QGF (Q-Guided Flow)</strong>, an RL algorithm that performs policy optimization 
+        <strong>entirely at test time</strong>. QGF trains both a reference flow policy 
+        (via behavioral cloning) and a value function critic and, 
+        at test time, uses <strong>a novel critic gradient estimator to guide</strong> the reference flow policy to 
+        sample higher-value actions <strong>without any additional policy learning</strong>.
+      </p>
+    </div>
+  </div>
+</section>
+
+<hr class="section-sep" />
+
+<!-- ═══════════════════════════════════════════════════
+     MAIN RESULTS (up front)
+═══════════════════════════════════════════════════ -->
+<!-- <section class="section has-background-alt">
+  <div class="container is-max-desktop">
+    <h2 class="title is-3 section-heading">Main Results</h2>
+    <p style="margin-bottom:1.5rem;">
+      We evaluate on <strong>OGBench</strong> offline RL benchmarks with action chunking
+      (chunk size 5) across 20 single-task manipulation environments with 100M-transition datasets.
+      QGF outperforms all test-time methods and matches or beats the best training-time baselines —
+      without ever updating policy weights.
+    </p>
+
+    <figure class="image" style="margin-bottom:0.75rem;">
+      <img class="fig-img bordered" src="static/figures/results-1.png"
+           alt="Main offline RL results: QGF vs baselines on OGBench" />
+    </figure>
+    <p class="fig-caption">
+      <strong>Single-task offline RL performance</strong> at 500k training steps (20 tasks, 10 seeds).
+      QGF outperforms all test-time methods (QFQL, BPTT, RobustQ, CFGRL, GradStep, BFN $N$=4)
+      and is competitive with the best training-time baseline (EDP).
+    </p>
+  </div>
+</section>
+
+<hr class="section-sep" /> -->
+
+<!-- ═══════════════════════════════════════════════════
+     ABSTRACT
+═══════════════════════════════════════════════════ -->
+<!-- <section class="section">
+  <div class="container is-max-desktop">
+    <div class="columns is-centered">
+      <div class="column is-four-fifths">
+        <h2 class="title is-3 section-heading">Abstract</h2>
+        <div class="content">
+          <p>
+            Expressive continuous control policies, such as diffusion and flow models, form the
+            backbone of recent advances in scaling imitation learning for simulated and real robot
+            control. While they are known to scale stably in the supervised imitation learning
+            setting, incorporating them into reinforcement learning (RL) pipelines for policy
+            improvement has proven more difficult. It often requires specialized training objectives
+            or back-propagating through denoising processes, which cause well-known issues with
+            stability and affects scalability. In this paper we study the question of whether simple
+            policy improvement schemes at test time alone, leaving stable supervised policy training
+            intact, can be a competitive alternative which sidesteps these issues. To this end, we
+            propose <strong>QGF (Q-Guided Flow)</strong>, an RL algorithm that performs policy
+            optimization entirely at test time. QGF works by pre-training both a reference flow
+            policy (via a standard behavioral cloning objective) and a value function critic and, at
+            test time, using the value gradient to guide the reference policy to generate
+            higher-value actions without any additional policy learning. Empirically, QGF
+            outperforms prior test-time RL methods on single-task and goal-conditioned offline RL
+            benchmarks with high-dimensional action spaces, and is competitive with
+            state-of-the-art training-time algorithms while being much cheaper to run. Moreover, it
+            exhibits favorable scaling with model size by avoiding the instability of actor-critic
+            training, offering a practical and effective alternative RL algorithm with expressive
+            policies.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="section-sep" /> -->
+
+
+<!-- ═══════════════════════════════════════════════════
+     Motivation
+═══════════════════════════════════════════════════ -->
+<section class="section">
+  <div class="container is-max-desktop">
+    <div class="columns">
+      <div class="column">
+        <h2 class="title is-3 section-heading">Why Study Test-Time Policy Improvement?</h2>
+        <div class="content">
+          <p>
+            Expressive continuous control policies, such as <strong>diffusion and flow models</strong>, form the
+            backbone of recent advances in scaling imitation learning for simulated and real robot
+            control. While they are known to scale stably in the supervised imitation learning
+            setting, incorporating them into reinforcement learning (RL) pipelines for policy
+            improvement has proven more difficult. It often requires <strong>specialized training objectives</strong>
+            or <strong>back-propagating through denoising processes</strong>, which cause well-known issues with
+            stability and affects scalability. 
+            A simpler and more scalable alternative is to perform policy improvement
+            entirely at test time: train a reference policy with standard behavioral cloning and learn a critic separately
+            with standard TD learning, then at inference time, use the critic to "guide" the reference policy towards higher-value actions.
+          </p>
+          <p>
+            Specifically, we would like to leverage the <strong>critic gradient $\nabla_a Q(s,a)$</strong> 
+            for efficient guidance of the reference policy's denoising process towards high-value directions.
+            Is there a way to do this that makes policy performance as good as algorithms that specifically train the actor to maximize returns?
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="section-sep" />
+
+
+<!-- ═══════════════════════════════════════════════════
+     ANALYSIS: WHY NAIVE GUIDANCE FAILS
+═══════════════════════════════════════════════════ -->
+<section class="section has-background-alt">
+  <div class="container is-max-desktop">
+    <h2 class="title is-3 section-heading">Problems with Naïve Gradient Guidance</h2>
+
+    <div class="content">
+      <p>
+        Recall that the solution to the <strong>KL-regularized reward maximization problem</strong> satisfies the closed-form:
+      </p>
+      $$\pi(a \mid s) \;\propto\; \hat{\pi}(a \mid s) \cdot \exp\!\left(\tfrac{1}{\beta}Q(s,a)\right),$$
+      <p>
+        where $\hat{\pi}$ is the reference policy, and $\beta$ is the regularization strength.
+        Since diffusion (and under some constraints flow matching) learn the <strong>score function</strong>, we can
+        take the score functions on both sides,
+      </p>
+      $$\nabla_a \log \pi(a \mid s) \;=\; \nabla_a \log \hat{\pi}(a \mid s) \;+\; \tfrac{1}{\beta}\,\nabla_a Q(s,a).$$
+      <p>
+        We can extend the above definition to an extended action space with noisy perturbations of actions: 
+      </p>
+      $$\nabla_{a_t} \log \pi(a_t \mid s) \;\approx\; \nabla_{a_t} \log \hat{\pi}(a_t \mid s) \;+\; \tfrac{1}{\beta}\,\nabla_{a_t} Q(s,a_t).$$
+      <p>
+        This suggests that in order to sample from the improved policy $\pi$, 
+        we can modify the denoising process to integrate over the score function 
+        of the reference policy plus a <strong>guidance term $\nabla_{a_t} Q(s, a_t)$</strong>.
+        This is analogous to performing <strong>classifier guidance</strong> with a learned $Q$ function replacing the classifier.
+      </p>
+    </div>
+
+    <!-- OOD Gradient -->
+    <div style="background:#f7e9e9; border:1px solid #e8c4c4; border-radius:12px; padding:1.5rem 1.75rem; margin:1.75rem 0; font-size:1rem; line-height:1.7;">
+      <p style="font-weight:700; color:#c0392b; margin-bottom:0.5rem;">
+        ✗&ensp;The Most Natural Approach: OOD Gradient $\nabla_{a_t} Q(s,\, a_t)$
+      </p>
+      <p>
+        Following the derivation above, the guidance is directly
+        $\nabla_{a_t} Q(s, a_t)$ — the critic gradient at the current noisy action $a_t$.
+        However, the critic $Q(s,a)$ is trained exclusively on <em>fully denoised</em>
+        actions from the dataset. Intermediate noisy actions $a_t$ can lie far
+        outside the critic's training distribution and <strong>querying it at out-of-distribution (OOD)
+        noisy actions</strong> requires the gradient of the Q-function to be correct
+        far from its training data, which is not generally guaranteed.
+      </p>
+      <p style="margin-top:1rem;">
+        In fact, we provide an illustrative example below showing that using this OOD gradient for guidance
+        can <strong>result in a suboptimal solution</strong>.
+      </p>
+    </div>
+
+    <!-- 1D illustrative example: OOD failure -->
+    <figure class="image" style="margin-bottom:0.75rem;">
+      <img class="fig-img bordered" src="static/figures/flow_guidance_analytical_variants-1.png"
+           alt="1D illustrative example comparing OOD, BPTT, and QGF guidance" />
+    </figure>
+    <p class="fig-caption">
+      <strong>1D illustrative example.</strong> A flow matching model maps Gaussian noise to a
+      tri-modal distribution; $Q$ is negative $L_2$ distance to the optimal action $a^*$.
+      <strong>Guidance with the OOD gradient $\nabla_{a_t} Q(s, a_t)$ does not result in the
+      optimal solution</strong> — regardless of guidance weight, it consistently misdirects the
+      flow to a suboptimal action. BPTT and QGF both converge to $a^*$.
+    </p>
+
+    <!-- BPTT Gradient -->
+    <div style="background:#faeedf; border:1px solid #e8d0ad; border-radius:12px; padding:1.5rem 1.75rem; margin:1.75rem 0; font-size:1rem; line-height:1.7;">
+      <p style="font-weight:700; color:#c0660a; margin-bottom:0.5rem;">
+        ✗&ensp;A More Principled Approach: BPTT Gradient $\nabla_{a_t} Q\!\left(s,\, \mathrm{ODE}(a_t)\right)$
+      </p>
+      <p>
+        A more principled alternative avoids querying $Q$ on OOD inputs:
+        since flow matching deterministically maps $a_t$ to a fully denoised action $a_1 = \mathrm{ODE}(a_t)$,
+        we can define $Q(s, a_t) := Q(s, a_1)$. Calculating the gradient
+        $\nabla_{a_t} Q(s, \mathrm{ODE}(a_t))$ requires backpropagating through the entire denoising chain.
+      </p>
+      <p style="margin-top:1rem;">
+        However, this BPTT gradient is <strong>expensive to compute</strong> and
+        <strong>highly sensitive to noise</strong>. Small perturbations in $a_t$ lead to wildly
+        different gradient directions, causing instability.
+        See the illustrative example below, and also our quantitative analysis in the paper.
+      </p>
+    </div>
+
+    <!-- BPTT instability figure (from paper appendix) -->
+    <figure class="image" style="margin-bottom:0.75rem;">
+      <img class="fig-img bordered" src="static/figures/flow_guidance_analytical_variants_bptt-1.png"
+           alt="BPTT gradient instability in 1D illustrative example" />
+    </figure>
+    <p class="fig-caption">
+      <strong>BPTT gradient instability.</strong> The same 1D illustrative setting shows that
+      the BPTT gradient can be <strong>highly unstable</strong>, especially at larger guidance weights.
+    </p>
+
+  </div>
+</section>
+
+<hr class="section-sep" />
+
+<!-- ═══════════════════════════════════════════════════
+     METHOD: QGF
+═══════════════════════════════════════════════════ -->
+<section class="section">
+  <div class="container is-max-desktop">
+    <h2 class="title is-3 section-heading">Our Method: Q-Guided Flow (QGF)</h2>
+
+    <div class="content">
+      <p>
+        QGF avoids both failure modes with one key idea: instead of fully integrating the denoising ODE, 
+        we can obtain a cheap, first-order approximation of the denoised action by
+        taking a single <strong>Euler integration step</strong> along the reference velocity field:
+      </p>
+      $$\hat{a}_1 \;=\; a_t \;+\; v_\theta(s,\, a_t,\, t)\cdot(1-t)$$
+      <p>
+        Then the critic gradient can be approximated with:
+      </p>
+      $$\nabla_{a_t} Q(s, a_1) \approx \nabla_{a_t} Q(s, \hat{a}_1) = \left(\frac{\partial \hat{a}_1}{\partial a_t}\right)^\top \nabla_{\hat{a}_1} Q(s, \hat{a}_1),$$
+      <p>
+        which is a product betweeen the gradient of $Q$ at the approximate denoised action and the Jacobian of the denoised action with respect to the noisy action, $J = \frac{\partial \hat{a}_1}{\partial a_t}$.
+        Empirically, we find that $J$ can be ill-behaved since it requires differentiation through $v_\theta$, 
+        and simply <strong>replacing it with the identity</strong> gives better performance, effectively computing:
+      </p>
+      <strong>
+      $$\nabla_{a_t} Q(s, a_1) \approx \hat{J}^\top \: \nabla_{\hat{a}_1} Q(s, \hat{a}_1) \quad \text{where} \quad {\hat{a}_1 = a_t + v_\theta(s, a_t,t) \cdot (1-t), \: \hat{J}=I}$$
+    </strong>
+      <p>
+        During inferece, this gradient is added to the velocity field at each denoising step to "guide" denoising towards higher-value actions:
+      </p>
+      <!-- $$a_{t+1} \;=\; a_t \;+\; \frac{1}{T}\!\left(v_\theta(s,\, a_t,\, t) \;+\; \frac{1}{\beta}\,g\right)$$ -->
+    </div>
+
+    <!-- Algorithm box -->
+    <div class="algo-box" style="margin: 1.5rem 0;">
+      <div class="algo-title">Algorithm — QGF Inference</div>
+      <div><strong>Input:</strong> state $s$, reference flow $v_\theta$, critic $Q_\phi$, guidance weight $1/\beta$, steps $T$</div>
+      <div>$a_0 \sim \mathcal{N}(0, I)$</div>
+      <div><strong>for</strong> $t = 0,\, 1/T,\, \ldots,\, 1 - 1/T$ <strong>do</strong></div>
+      <div>&nbsp;&nbsp;&nbsp;$a' \leftarrow a_t + (1-t)\,v_\theta(s, a_t, t)$ <span class="comment">// approx. clean action (1-step Euler)</span></div>
+      <div>&nbsp;&nbsp;&nbsp;$g \leftarrow \nabla_{a'} Q_\phi(s, a')$ <span class="comment">// QGF gradient estimator without Jacobian</span></div>
+      <div>&nbsp;&nbsp;&nbsp;$a_{t+1} \leftarrow a_t + \tfrac{1}{T}\bigl(v_\theta(s, a_t, t) + \tfrac{1}{\beta}\,g\bigr)$ <span class="comment">// Q-guided step</span></div>
+      <div><strong>end for</strong>&nbsp;&nbsp;&nbsp;</div>
+      <div><strong>return</strong> $a_T$</div>
+    </div>
+
+    <!-- Why the two approximations work -->
+    <h3 class="title is-4" style="margin-top:2rem; font-family:'Google Sans',sans-serif;">
+      The Two Approximations Beat Their Exact Counterparts
+    </h3>
+
+    <div class="content">
+      <p>
+        Two design choices above in QGF may appear to be crude approximations: 
+        we drop the Jacobian entirely and use a first-order approximation of the denoised action. 
+        Both look like approximations one would only tolerate for efficiency. 
+        Surprisingly, we find that neither is merely a compromise and <strong>both approximations outperform their more "exact" counterparts</strong>.
+        Intuitively:
+      </p>
+    </div>
+
+    <div class="fig-two-col" style="margin:1.5rem 0;">
+
+      <div style="background:#eef4f9; border:1px solid #b3cfe0; border-radius:12px; padding:1.5rem 1.75rem; font-size:1rem; line-height:1.7;">
+        <p style="font-weight:700; color:#5a91b4; margin-bottom:0.5rem;">
+          &ensp;1: First-Order Approx. vs. Full ODE Denoising
+        </p>
+        <p>
+          Following the full denoising process of the base BC flow <strong>restricts</strong> the 
+          denoised action to cover the full dataset distribution, while our approximation allows 
+          small deviations from the exact dataset distribution and allows the flow to 
+          choose only certain modes of the dataset distribution.
+        </p>
+      </div>
+
+      <div style="background:#eef4f9; border:1px solid #b3cfe0; border-radius:12px; padding:1.5rem 1.75rem; font-size:1rem; line-height:1.7;">
+        <p style="font-weight:700; color:#5a91b4; margin-bottom:0.5rem;">
+          &ensp;2: Identity Approx. ($\hat{J}=I$) vs. Exact Jacobian
+        </p>
+        <p>
+          The Jacobian can be <strong>ill-conditioned</strong>, especially at early denoising steps
+          where the one-step approximation is a crude approximation of the gournd truth denoising process. 
+          Including it amplifies <strong>noise</strong> and dramatically
+          increases gradient variance.
+        </p>
+      </div>
+    </div>
+
+    <div class="content">
+      <p>
+        More quantitatively, we find that these choices yield a <strong>lower-variance 
+          gradient estimator</strong> that is <strong>better at optimizing $Q$-values</strong>.
+        We compare below three different gradient estimators:
+      </p>
+
+      <div style="text-align: center; margin-bottom: 1.25rem;">
+        <ul style="display: inline-block; text-align: left; list-style: none; padding-left: 0; margin: 0;">
+          <li>QGF: $\quad \nabla_{a_t} Q(s, a_1) \approx \hat{J}^\top \: \nabla_{\hat{a}_1} Q(s, \hat{a}_1)$</li>
+          <li>QGF-Jacobian: $\quad \nabla_{a_t} Q(s, a_1) \approx J^\top \: \nabla_{\hat{a}_1} Q(s, \hat{a}_1)$</li>
+          <li>QGF-chain: $\quad \nabla_{a_t} Q(s, a_1) \approx \hat{J}^\top \: \nabla_{a_t} Q(s, \mathrm{ODE}(a_t))$</li>
+        </ul>
+      </div>
+
+      <p>
+        where $\hat{J}=I$ and $J=\frac{\partial \hat{a}_1}{\partial a_t}$.
+        Both QGF-Jacobian and QGF-chain are the more "exact" counterparts of QGF, respectively using the exact
+        Jacobian, and the exact denoising process.
+      </p> 
+      <p>
+        We evaluate these gradient estimators, together with the OOD and BPPT gradients from above, with two metrics:
+        (1) <strong>gradient noise sensitivity</strong> and (2) <strong>$Q$-value optimization quality</strong>.
+        For (1), we compute the cosine similarity between the gradient at $a_t$ and at $a_t + \epsilon$,
+        where $\epsilon$ is a small perturbation.
+        For (2), we view each gradient estimator as an "optimizer" that tries to 
+        optimize for high $Q$ value actions, which we find to roughly correlate with performance.
+      </p>
+    </div>
+
+
+    <!-- Evidence: noise sensitivity and Q-optimizer quality -->
+    <div class="fig-two-col" style="margin-top:1.5rem;">
+      <div>
+        <img class="fig-img bordered" src="static/figures/cosine_summary_avg_envs-1.png"
+             alt="Gradient estimator sensitivity to noise" />
+        <p class="fig-caption">
+          <strong>Gradient noise sensitivity.</strong> Cosine similarity between the gradient at
+          $a_t$ and at $a_t + \epsilon$. Values near 1 indicate low variance. QGF has the <strong>lowest variance</strong> of all
+          estimators. Averaged over 20 tasks, 4 seeds.
+        </p>
+      </div>
+      <div>
+        <img class="fig-img bordered" src="static/figures/q_optimizer_vs_performance-1.png"
+             alt="Q-value optimization quality for each gradient estimator" />
+        <p class="fig-caption">
+          <strong>$Q$-value optimization quality.</strong> $Q$ values of final denoised actions
+          under each gradient guidance scheme. QGF's two approximations together make it the best
+          gradient-based optimizer, closely approaching the best-of-$N$ oracle.
+        </p>
+      </div>
+    </div>
+
+    <div class="content" style="margin-top:1.5rem;">
+      <p>
+        The analysis result above shows that QGF's two approximations together make it the 
+        least sensitive to gradient noise, and the best $Q$-value optimizer. It is also better
+        than the OOD and BPTT gradients from above.
+      </p>
+    </div>
+
+    <!-- <div class="content" style="margin-top:1.5rem;">
+      <p>
+        QGF is <strong>agnostic to the critic type</strong>: it works with any pre-trained
+        $Q$-function. In the paper we use IQL for simplicity, but plugging in a higher-quality
+        TD-based critic further boosts performance.
+      </p>
+    </div> -->
+
+  </div>
+</section>
+
+<hr class="section-sep" />
+
+<!-- ═══════════════════════════════════════════════════
+     ALL RESULTS
+═══════════════════════════════════════════════════ -->
+<section class="section has-background-alt">
+  <div class="container is-max-desktop">
+    <h2 class="title is-3 section-heading">Results</h2>
+
+    <!-- 1. Main comparison -->
+    <h3 class="title is-4" style="font-family:'Google Sans',sans-serif; margin-bottom:0.5rem;">
+      Comparing QGF with Test-Time and Train-Time Baselines
+    </h3>
+    <p style="margin-bottom:1rem;">
+      QGF outperforms all prior test-time RL methods by a significant margin and is competitive
+      with the best training-time baseline.
+    </p>
+    <figure class="image" style="margin-bottom:0.75rem;">
+      <img class="fig-img bordered" src="static/figures/results-1.png"
+           alt="Offline RL results: QGF vs all baselines" />
+    </figure>
+    <p class="fig-caption" style="margin-bottom:2.5rem;">
+      Offline RL performance at 500k training steps (20 tasks, 10 seeds).
+    </p>
+
+    <!-- 2. Scaling test-time compute -->
+    <h3 class="title is-4" style="font-family:'Google Sans',sans-serif; margin-bottom:0.5rem;">
+      Scaling Test-Time Compute with Best-of-$N$
+    </h3>
+    <p style="margin-bottom:1rem;">
+      QGF alone outperforms BFN $N$=4 while using orders of magnitude fewer FLOPs; QGF+BFN
+      matches BFN $N$=16 at much lower compute cost, showing gradient guidance is efficient and effective.
+    </p>
+    <div class="fig-two-col" style="margin-bottom:0.75rem;">
+      <div>
+        <img class="fig-img bordered" src="static/figures/bfn_results-1.png"
+             alt="Best-of-N comparison" />
+        <p class="fig-caption">
+          Performance with best-of-$N$ sampling (20 tasks, 10 seeds).
+        </p>
+      </div>
+      <div>
+        <img class="fig-img bordered" src="static/figures/compute_cost-1.png"
+             alt="Compute cost comparison" />
+        <p class="fig-caption">
+          FLOPs per action for each test-time method.
+        </p>
+      </div>
+    </div>
+    <div style="margin-bottom:2.5rem;"></div>
+
+    <!-- 3. Harder tasks & model scaling -->
+    <h3 class="title is-4" style="font-family:'Google Sans',sans-serif; margin-bottom:0.5rem;">
+      Scaling QGF to Harder Tasks and Larger Models
+    </h3>
+    <p style="margin-bottom:1rem;">
+      On goal-conditioned long-horizon tasks QGF is consistently the best-performing method as
+      difficulty increases, and scales with model size (~$4\times$ gain at 3.2M params) while
+      training-time baselines plateau or collapse.
+    </p>
+    <div style="display:grid; grid-template-columns: 1.8fr 1fr; gap:2rem; align-items:start; margin-bottom:0.75rem;">
+      <div>
+        <img class="fig-img bordered" src="static/figures/dqc_max-1.png"
+             alt="Goal-conditioned offline RL" />
+        <p class="fig-caption">
+          Goal-conditioned offline RL at 1M steps (25 tasks, 10 seeds).
+        </p>
+      </div>
+      <div>
+        <img class="fig-img bordered" src="static/figures/model_scaling-1.png"
+             alt="Model size scaling" />
+        <p class="fig-caption">
+          Performance vs. model size on <code>cube-triple</code> (5 tasks).
+        </p>
+      </div>
+    </div>
+    <div style="margin-bottom:2.5rem;"></div>
+
+    <!-- 4. Different critics -->
+    <h3 class="title is-4" style="font-family:'Google Sans',sans-serif; margin-bottom:0.5rem;">
+      QGF with Different Critics
+    </h3>
+    <p style="margin-bottom:1rem;">
+      QGF is agnostic to the critic type: plugging in a higher-quality TD-based critic (QAM)
+      further boosts performance, and QGF+QAM critic outperforms QAM itself.
+    </p>
+    <div class="columns is-centered">
+      <div class="column is-half">
+        <img class="fig-img bordered" src="static/figures/with_qam_vf.png"
+             alt="QGF with IQL vs QAM critic" />
+        <p class="fig-caption">
+          QGF with IQL vs. TD-based (QAM) critic (20 tasks, 4 seeds).
+        </p>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<hr class="section-sep" />
+
+<!-- ═══════════════════════════════════════════════════
+     BIBTEX
+═══════════════════════════════════════════════════ -->
+<section class="section">
+  <div class="container is-max-desktop">
+    <div class="columns is-centered">
+      <div class="column is-four-fifths">
+        <h2 class="title is-3 section-heading">BibTeX</h2>
+        <div class="bibtex-code">@article{zhou2025qgf,
+  title   = {Test-Time Gradient Guidance of Flow Policies in Reinforcement Learning},
+  author  = {Zhou, Zhiyuan and Peng, Andy and Xu, Charles and Li, Qiyang and
+             Springenberg, Tobias and Frans, Kevin and Levine, Sergey},
+  year    = {2026},
+}</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer class="footer" style="padding:1.5rem;">
+  <div class="content has-text-centered" style="font-size:0.88rem; color:#999;">
+    Website template inspired by
+    <a href="https://nerfies.github.io" target="_blank">Nerfies</a>
+    under a <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank">CC BY-SA 4.0</a> license.
+  </div>
+</footer>
+
+</body>
+</html>

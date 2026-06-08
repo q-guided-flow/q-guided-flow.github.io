@@ -299,8 +299,8 @@
       <p>
         A more principled alternative avoids querying $Q$ on OOD inputs:
         since flow matching deterministically maps $a_t$ to a fully denoised action $a_1 = \mathrm{ODE}(a_t)$,
-        we can define $Q(s, a_t) := Q(s, a_1)$. Calculating the gradient
-        $\nabla_{a_t} Q(s, \mathrm{ODE}(a_t))$ requires backpropagating through the entire denoising chain.
+        we can define $Q(s, a_t) := Q(s, a_1)$. The gradient then is
+        $\nabla_{a_t} Q(s, \mathrm{ODE}(a_t))$ and calculating it requires backpropagating through the entire denoising chain.
       </p>
       <p style="margin-top:1rem;">
         However, this BPTT gradient is <strong>expensive to compute</strong> and
@@ -498,15 +498,20 @@
       Comparing QGF with Test-Time and Train-Time Baselines
     </h3>
     <p style="margin-bottom:1rem;">
-      QGF outperforms all prior test-time RL methods by a significant margin and is competitive
-      with the best training-time baseline.
+      We group baselines into two categories: test-time methods that uses a learned critic to optimize 
+      action sampling from a BC policy entirely at test time, and training-time methods that 
+      trains a policy to maximize $Q(s, a)$ during training.
+      QGF <strong>outperforms all prior test-time RL methods</strong> by a significant margin and is <strong>competitive
+      with the best training-time baseline</strong>.
+      QGF also outperforms its variant QGF-Jacobian, showing that dropping the Jacobian 
+      in the gradient estimator improves performance.
     </p>
     <figure class="image" style="margin-bottom:0.75rem;">
       <img class="fig-img bordered" src="static/figures/results-1.png"
            alt="Offline RL results: QGF vs all baselines" />
     </figure>
     <p class="fig-caption" style="margin-bottom:2.5rem;">
-      Offline RL performance at 500k training steps (20 tasks, 10 seeds).
+      Offline RL performance at 500k training steps (20 tasks from OGBench, 10 seeds).
     </p>
 
     <!-- 2. Scaling test-time compute -->
@@ -514,15 +519,15 @@
       Scaling Test-Time Compute with Best-of-$N$
     </h3>
     <p style="margin-bottom:1rem;">
-      QGF alone outperforms BFN $N$=4 while using orders of magnitude fewer FLOPs; QGF+BFN
-      matches BFN $N$=16 at much lower compute cost, showing gradient guidance is efficient and effective.
+      QGF alone outperforms BFN ($N$=4) while using orders of magnitude fewer FLOPs; When combinining QGF with BFN sampling, QGF+BFN ($N=4$)
+      matches BFN ($N$=16) at much lower compute cost, showing gradient guidance is efficient and effective.
     </p>
     <div class="fig-two-col" style="margin-bottom:0.75rem;">
       <div>
         <img class="fig-img bordered" src="static/figures/bfn_results-1.png"
              alt="Best-of-N comparison" />
         <p class="fig-caption">
-          Performance with best-of-$N$ sampling (20 tasks, 10 seeds).
+          Performance with best-of-$N$ sampling (20 tasks from OGBench, 10 seeds).
         </p>
       </div>
       <div>
@@ -540,7 +545,7 @@
       Scaling QGF to Harder Tasks and Larger Models
     </h3>
     <p style="margin-bottom:1rem;">
-      On goal-conditioned long-horizon tasks QGF is consistently the best-performing method as
+      On offline goal-conditioned long-horizon tasks QGF is consistently the best-performing method as
       difficulty increases, and scales with model size (~$4\times$ gain at 3.2M params) while
       training-time baselines plateau or collapse.
     </p>
@@ -549,14 +554,14 @@
         <img class="fig-img bordered" src="static/figures/dqc_max-1.png"
              alt="Goal-conditioned offline RL" />
         <p class="fig-caption">
-          Goal-conditioned offline RL at 1M steps (25 tasks, 10 seeds).
+          Goal-conditioned offline RL at 1M steps (25 tasks from OGBench, 10 seeds).
         </p>
       </div>
       <div>
         <img class="fig-img bordered" src="static/figures/model_scaling-1.png"
              alt="Model size scaling" />
         <p class="fig-caption">
-          Performance vs. model size on <code>cube-triple</code> (5 tasks).
+          Performance vs. model size on cube-triple (5 tasks).
         </p>
       </div>
     </div>

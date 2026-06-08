@@ -93,6 +93,7 @@ h2.title.tldr-heading,
   font-family: 'Courier New', 'Lucida Console', monospace;
   font-size: 0.9rem;
   line-height: 1.75;
+  overflow-x: auto;
 }
 .algo-box .algo-title {
   font-family: 'Google Sans', 'Noto Sans', sans-serif;
@@ -188,10 +189,31 @@ h2.title.tldr-heading,
   gap: 1.5rem;
   align-items: start;
 }
+/* Asymmetric grid (e.g. 1.8fr 1fr) — collapses to single column on mobile */
+.fig-asym-col {
+  display: grid;
+  grid-template-columns: 1.8fr 1fr;
+  gap: 2rem;
+  align-items: start;
+}
+
+/* KaTeX display equations: scroll horizontally on small screens */
+.katex-display {
+  overflow-x: auto;
+  overflow-y: hidden;
+}
 
 @media (max-width: 768px) {
-  .fig-two-col, .fig-three-col { grid-template-columns: 1fr; }
-  .publication-title { font-size: 1.6rem !important; }
+  .fig-two-col, .fig-three-col, .fig-asym-col { grid-template-columns: 1fr; }
+  .publication-title { font-size: 1.5rem !important; }
+  .section-heading { font-size: 1.4rem; }
+  /* Tighten section padding on small screens */
+  .section { padding: 2rem 1rem; }
+  /* Tighten method/insight boxes */
+  .tldr-box,
+  .method-box { padding: 1rem 1.1rem; }
+  /* Algo box: slightly smaller font on mobile */
+  .algo-box { font-size: 0.78rem; }
 }
 
 /* ── Separator ── */

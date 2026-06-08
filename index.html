@@ -61,7 +61,7 @@
               <a href="https://kvfrans.com/" target="_blank">Kevin Frans</a><sup>1</sup>,
             </span>
             <span class="author-block">
-              <a href="https://people.eecs.berkeley.edu/~svlevine/" target="_blank">Sergey Levine</a><sup>1</sup>
+              <a href="https://people.eecs.berkeley.edu/~svlevine/" target="_blank">Sergey Levine</a><sup>1,2</sup>
             </span>
           </div>
 
@@ -210,7 +210,7 @@
             improvement has proven more difficult. It often requires <strong>specialized training objectives</strong>
             or <strong>back-propagating through denoising processes</strong>, which cause well-known issues with
             stability and affects scalability. 
-            A simpler and more scalable alternative is to perform policy improvement
+            <strong>A simpler and more scalable alternative</strong> is to perform policy improvement
             entirely at test time: train a reference policy with standard behavioral cloning and learn a critic separately
             with standard TD learning, then at inference time, use the critic to "guide" the reference policy towards higher-value actions.
           </p>
@@ -419,7 +419,7 @@
         We compare below three different gradient estimators:
       </p>
 
-      <div style="text-align: center; margin-bottom: 1.25rem;">
+      <div style="overflow-x: auto; margin-bottom: 1.25rem;">
         <ul style="display: inline-block; text-align: left; list-style: none; padding-left: 0; margin: 0;">
           <li>QGF: $\quad \nabla_{a_t} Q(s, a_1) \approx \hat{J}^\top \: \nabla_{\hat{a}_1} Q(s, \hat{a}_1)$</li>
           <li>QGF-Jacobian: $\quad \nabla_{a_t} Q(s, a_1) \approx J^\top \: \nabla_{\hat{a}_1} Q(s, \hat{a}_1)$</li>
@@ -549,7 +549,7 @@
       difficulty increases, and scales with model size (~$4\times$ gain at 3.2M params) while
       training-time baselines plateau or collapse.
     </p>
-    <div style="display:grid; grid-template-columns: 1.8fr 1fr; gap:2rem; align-items:start; margin-bottom:0.75rem;">
+    <div class="fig-asym-col" style="margin-bottom:0.75rem;">
       <div>
         <img class="fig-img bordered" src="static/figures/dqc_max-1.png"
              alt="Goal-conditioned offline RL" />

@@ -443,7 +443,7 @@
       </p> 
       <p>
         We evaluate these gradient estimators, together with the OOD and BPPT gradients from above, with two metrics:
-        (1) <strong>gradient noise sensitivity</strong> and (2) <strong>$Q$-value optimization quality</strong>.
+        (1) <strong>gradient noise sensitivity</strong> and (2) <strong>$Q$-value optimization ability</strong>.
         For (1), we compute the cosine similarity between the gradient at $a_t$ and at $a_t + \epsilon$,
         where $\epsilon$ is a small perturbation.
         For (2), we view each gradient estimator as an "optimizer" that tries to 
@@ -465,9 +465,9 @@
       </div>
       <div>
         <img class="fig-img bordered" src="static/figures/q_optimizer_vs_performance-1.svg"
-             alt="Q-value optimization quality for each gradient estimator" />
+             alt="Q-value optimization ability for each gradient estimator" />
         <p class="fig-caption">
-          <strong>$Q$-value optimization quality.</strong> $Q$ values of final denoised actions
+          <strong>$Q$-value optimization ability.</strong> $Q$ values of final denoised actions
           under each gradient guidance scheme. QGF's two approximations together make it the best
           gradient-based optimizer, closely approaching the best-of-$N$ oracle. The OOD gradient
           exploits the critic and doesn't perform well (see paper for details).
